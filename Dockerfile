@@ -1,7 +1,12 @@
 FROM node:20-alpine
 WORKDIR /app
+
+# FIXED: Use npm install instead of npm ci
 COPY package.json .
-RUN npm ci --only=production --no-optional
+RUN npm install --production --no-optional
+
 COPY . .
 EXPOSE $PORT
-CMD ["sh", "-c", "npm start"]
+
+# FIXED: Correct start command
+CMD ["node", "index.js"]
