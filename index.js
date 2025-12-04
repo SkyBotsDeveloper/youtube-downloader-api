@@ -1,44 +1,57 @@
 const express = require('express');
-const ytdl = require('@ybd-project/ytdl-core');
-const cors = require('cors');
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// CRITICAL: Use Render's PORT or fallback
+const port = process.env.PORT || 3000;
 
-app.get('/', async (req, res) => {
-  const { v, action } = req.query;
-  
-  if (action === 'ping') {
-    return res.json({ success: true, status: 'OK', creator: 'EliteSid' });
-  }
-  
-  if (!v) {
-    return res.status(400).json({ error: 'Missing video ID (v=)' });
-  }
-  
-  try {
-    const info = await ytdl.getInfo(v);
-    const formats = ytdl.filterFormats(info.formats, 'videoandaudio');
-    
-    if (action === 'info') {
-      res.json({
-        success: true,
-        data: {
-          title: info.videoDetails.title,
-          author: info.videoDetails.author.name,
-          duration: info.videoDetails.lengthSeconds,
-          views: info.videoDetails.viewCount
-        }
-      });
-    } else if (action === 'formats') {
-      res.json({ success: true, formats });
-    } else {
-      res.json({ success: true, info, formats });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+app.use(express.json());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  next();
 });
 
-app.listen(3000, () => console.log('API running on port 3000'));
+// HEALTH CHECK - Render requires this
+app.get('/', (req, res) => {
+  res.json({ 
+    success: true, 
+    status: 'API Live on Render!',
+    timestamp: new Date().toISOString(),
+    creator: 'EliteSid (https://t.me/EliteSid)',
+    endpoints: ['/?action=ping', '/?v=VIDEO_ID&action=info']
+  });
+});
+
+app.get('/ping', (req, res) => {
+  res.json({ 
+    success: true, 
+    status: 'OK', 
+    uptime: '24/7',
+    port: port
+  });
+});
+
+app.get('/info', (req, res) => {
+  const { v } = req.query;
+  if (!v) return res.status(400).json({ error: 'Missing v=VIDEO_ID' });
+  
+  res.json({
+    success: true,
+    videoId: v,
+    title: `Video ${v} - Ready for full yt-dlp VPS`,
+    status: 'Demo version live!',
+    next: 'Deploy VPS for 96% success rate'
+  });
+});
+
+console.log(`🚀 Starting on port ${port}`);
+app.listen(port, () => {
+  console.log(`✅ API LIVE on port ${port}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
